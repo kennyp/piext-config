@@ -7,7 +7,7 @@
 // under each root, default ~/Projects) go to that folder's .pi/piext.toml.
 // Comments stay: each file's tables are prefixed with its namespace. Without
 // --apply it only prints what it would write. With it, the old files become
-// *.bak.
+// *.bak (--keep: they stay). Files git tracks are skipped.
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, renameSync } from "node:fs";
 import { homedir } from "node:os";
@@ -18,6 +18,17 @@ import { globalPath, localPath, writeAtomic } from "../src/config.ts";
 const NS = ["guard", "nudge", "tasks"];
 const args = process.argv.slice(2);
 const apply = args.includes("--apply");
+// --keep: leave the old files in place (remove them yourself once all's well).
+const keep = args.includes("--keep");
+// Files a repo tracks are left alone: changing them is a change to the repo.
+const tracked = (path: string) => {
+  try {
+    execFileSync("git", ["-C", dirname(path), "ls-files", "--error-unmatch", path], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  }
+};
 const roots = args.filter((a) => !a.startsWith("--"));
 if (!roots.length) roots.push(join(homedir(), "Projects"));
 
@@ -42,7 +53,8 @@ for (const root of roots) {
   const found = execFileSync("find", [root, "-maxdepth", "6", "-path", "*/node_modules", "-prune", "-o", "-path", "*/.pi/*.toml", "-print"], { encoding: "utf8" });
   for (const from of found.split("\n").filter(Boolean)) {
     const ns = /\/\.pi\/(\w+)\.toml$/.exec(from)?.[1];
-    if (ns && NS.includes(ns)) moves.push({ from, to: localPath(dirname(dirname(from))), ns });
+    if (ns && NS.includes(ns) && tracked(from)) console.error(`skip ${from}: tracked by git`);
+    else if (ns && NS.includes(ns)) moves.push({ from, to: localPath(dirname(dirname(from))), ns });
   }
 }
 
@@ -69,6 +81,6 @@ for (const [to, t] of targets) {
   console.log(`\n=== ${to}  ← ${t.moves.map((m) => m.from).join(", ")}\n${t.text}`);
   if (!apply) continue;
   writeAtomic(to, t.text);
-  for (const m of t.moves) renameSync(m.from, `${m.from}.bak`);
+  if (!keep) for (const m of t.moves) renameSync(m.from, `${m.from}.bak`);
 }
-console.log(apply ? "\nWritten; old files renamed to *.bak." : "\nDry run. --apply to write.");
+console.log(apply ? `\nWritten${keep ? "; old files kept" : "; old files renamed to *.bak"}.` : "\nDry run. --apply to write.");
