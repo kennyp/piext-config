@@ -25,4 +25,18 @@ export {
 export { set, editText, parseKeyPath, keyPath, quoteKey, type Patch, type SetOptions } from "./src/edit.ts";
 export { setSession, clearSession, type EntryWriter } from "./src/session.ts";
 export { watch, type WatchOptions } from "./src/watch.ts";
+export {
+  dirs,
+  ensure,
+  move,
+  pruneEmpty,
+  configHome,
+  stateHome,
+  configDir,
+  stateRoot,
+  type Dirs,
+  type DirsOptions,
+  type Moved,
+  type Where,
+} from "./src/dirs.ts";
 export { glob, globToRegExp, inDir, hasWildcard, specificity, type GlobOptions } from "./src/glob.ts";

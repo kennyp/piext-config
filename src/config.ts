@@ -1,4 +1,4 @@
-// Reading the layers: ~/.config/piext/config.toml (global), then
+// Reading the layers: ~/.config/piext/config.toml (global; $XDG_CONFIG_HOME), then
 // <dir>/.pi/piext.toml (local), then the session's own overrides. Each
 // extension reads its own table, [<ns>], from each, and merges them.
 import { createHash } from "node:crypto";
@@ -6,14 +6,17 @@ import { mkdirSync, readFileSync, renameSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
 import { dirname, join } from "node:path";
 import { parse as parseToml } from "smol-toml";
+import { configDir, stateRoot } from "./dirs.ts";
 import { inDir } from "./glob.ts";
 
 export type Scope = "global" | "local" | "session";
 export type Table = Record<string, unknown>;
 
-export const globalPath = (home = homedir()) => join(home, ".config", "piext", "config.toml");
+/** $XDG_CONFIG_HOME/piext/config.toml, else ~/.config/piext/config.toml. */
+export const globalPath = (home = homedir(), env: NodeJS.ProcessEnv = process.env) => join(configDir({ home, env }), "config.toml");
 export const localPath = (cwd: string) => join(cwd, ".pi", "piext.toml");
-export const stateDir = (home = homedir()) => join(home, ".local", "state", "piext");
+/** $XDG_STATE_HOME/piext, else ~/.local/state/piext. */
+export const stateDir = (home = homedir(), env: NodeJS.ProcessEnv = process.env) => stateRoot({ home, env });
 const trustPath = (home: string) => join(stateDir(home), "trust.json");
 
 /** The key a global table uses to apply only in some folders. */

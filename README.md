@@ -5,7 +5,7 @@ one table per extension.
 
 | Level | Lives in | Applies to |
 |---|---|---|
-| **global** | `~/.config/piext/config.toml` | every session (a table with `dirs` only in those folders) |
+| **global** | `~/.config/piext/config.toml` (`$XDG_CONFIG_HOME/piext/` when set) | every session (a table with `dirs` only in those folders) |
 | **local** | `<dir>/.pi/piext.toml` | sessions in that folder |
 | **session** | the session's own entries | one session, again when it's resumed, following its branches |
 
@@ -27,6 +27,32 @@ threshold = 0.75
 name = "*opus*"
 threshold = 0.6
 ```
+
+## Where data goes
+
+Settings are the files above. An extension's data (a database, a log)
+goes in its own folder, one per scope:
+
+| Scope | Folder | For |
+|---|---|---|
+| global | `~/.local/state/piext/<ns>/` (`$XDG_STATE_HOME/piext/` when set) | every session |
+| local | `<dir>/.pi/piext/<ns>/` | that folder's sessions |
+| session | `~/.local/state/piext/sessions/<session id>/<ns>/` | one session, again when it's resumed |
+
+```ts
+import { dirs, ensure, move } from "./vendor/piext-config/index.ts";
+
+const d = dirs("tasks", { cwd, sessionId: ctx.sessionManager.getSessionId() });
+const db = join(ensure(d.local!), "tasks.db");
+// Once, from where an older version kept it (no link left behind):
+move(join(cwd, ".pi", "tasks.db"), db, join(cwd, ".pi"));
+```
+
+`dirs` creates nothing; `ensure` makes the one you write to. `move` moves
+a file or folder from an old location, prunes the old folders it leaves
+empty (up to `stop`), and leaves the old one alone when the new one already
+exists (`"kept"`: read only the new one). `$XDG_*` apply only with the real
+home, so tests with a fake one stay inside it.
 
 ## Using it
 

@@ -1,6 +1,6 @@
 {
   "name": "@kennyp/piext-config",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Shared settings for the TypeScript piext extensions: one file per level (global, folder, session), one table per extension",
   "license": "MIT",
   "type": "module",
